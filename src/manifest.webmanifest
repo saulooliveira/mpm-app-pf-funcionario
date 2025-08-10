@@ -1,0 +1,9 @@
+{
+  "name": "Escalas & Feriados",
+  "short_name": "Escalas",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f1221",
+  "theme_color": "#6c7cff",
+  "description": "Aplicativo de escalas e feriados para funcionários"
+}

@@ -8,7 +8,6 @@ import { refreshRequests, refreshAdminRequests } from './swap.js';
 import { initTeamView, renderTeamView } from './teamView.js';
 import { initSettings } from './settings.js';
 import { initAuth, showLogin, afterLogin, updateRoleUI, refreshEmployeeSelect } from './auth.js';
-import { openUserManager } from './userManagement.js';
 import { fmt } from './utils.js';
 
 // navigation buttons
@@ -91,7 +90,11 @@ editScaleBtn.onclick = ()=>{
 
 // manage users
 const manageUsersBtn = document.getElementById('manageUsersBtn');
-manageUsersBtn.onclick = ()=>{ if(!isAdmin()) return; openUserManager(refreshAllUI); };
+manageUsersBtn.onclick = async ()=>{
+  if(!isAdmin()) return;
+  const { openUserManager } = await import('./userManagement.js');
+  openUserManager(refreshAllUI);
+};
 
 // sync buttons
 document.getElementById('syncAllBtn').onclick = ()=>{ if(!isAdmin()) return; syncAll(state.currentDate.getFullYear()); };
@@ -123,6 +126,12 @@ renderTeamView();
 if(!SESSION){ showLogin(); } else { afterLogin(); }
 
 syncBR(new Date().getFullYear()).catch(()=>{});
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./sw.js');
+  });
+}
 
 // accessibility
 document.addEventListener('keydown', (e)=>{
