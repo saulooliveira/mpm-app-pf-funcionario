@@ -12,16 +12,24 @@
 </head>
 
 <body>
-  <header>
-    <div class="brand">
-      <div class="logo">EF</div>
-      <div>
-        <div style="font-weight:700">Escalas & Feriados</div>
-        <div style="font-size:.85rem;color:#9aa3b2">Folgas • Trocas • Calendário</div>
+  <header id="mainHeader" class="minimizable">
+    <div class="header-top">
+      <div class="brand">
+        <div class="logo">EF</div>
+        <div>
+          <div style="font-weight:700">Escalas & Feriados</div>
+          <div style="font-size:.85rem;color:#9aa3b2">Folgas • Trocas • Calendário</div>
+        </div>
+        <button class="btn header-toggle" id="toggleHeaderBtn" aria-label="Minimizar header">
+          <svg id="headerToggleIcon" width="22" height="22" viewBox="0 0 22 22" fill="none"
+            xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle">
+            <path id="headerToggleIconPath" d="M6 13l5-5 5 5" stroke="#4f6cff" stroke-width="2.2" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
+        </button>
       </div>
     </div>
-
-    <div class="controls">
+    <div class="controls" id="headerControls">
       <button class="btn" id="prevBtn">◀</button>
       <div id="currentLabel" class="kbd"></div>
       <button class="btn" id="nextBtn">▶</button>
@@ -35,16 +43,116 @@
       <select id="employeeSelect" title="Selecionar funcionário"></select>
       <button class="btn ghost" id="todayBtn">Hoje</button>
 
-      <button class="btn adminOnly" id="syncAllBtn">📡 Sincronizar feriados</button>
-      <button class="btn adminOnly" id="openSettings">⚙️ Configurar APIs</button>
-      <button class="btn adminOnly" id="manageUsersBtn">👤 Usuários</button>
+
+  <button class="btn adminOnly" id="editScaleModeBtn">🛠️ Editar Escala</button>
+  <button class="btn adminOnly" id="syncAllBtn">📡 Sincronizar feriados</button>
+  <button class="btn adminOnly" id="openSettings">⚙️ Configurar APIs</button>
+  <button class="btn adminOnly" id="manageUsersBtn">👤 Usuários</button>
+  <!-- Modal de edição de escala -->
+  <div id="editScaleModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);align-items:center;justify-content:center;z-index:400;">
+    <div class="panel" style="width:min(340px,92vw);max-width:96vw;max-height:90vh;overflow:auto;box-shadow:0 8px 32px #0002">
+      <div class="split" style="justify-content:space-between">
+        <h3 style="margin:0;font-size:1.1rem">Editar Escala</h3>
+        <button class="btn" id="closeEditScaleBtn">✖</button>
+      </div>
+      <div id="editScaleDate" class="muted" style="margin-bottom:.7rem"></div>
+      <form id="editScaleForm"></form>
+      <div class="split" style="justify-content:flex-end;margin-top:1rem">
+        <button class="btn primary" id="saveEditScaleBtn" type="submit">Salvar</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Modo edição de escala para admin
+    let editScaleMode = false;
+    const editScaleModeBtn = document.getElementById('editScaleModeBtn');
+    const editScaleModal = document.getElementById('editScaleModal');
+    const closeEditScaleBtn = document.getElementById('closeEditScaleBtn');
+    const editScaleForm = document.getElementById('editScaleForm');
+    const editScaleDate = document.getElementById('editScaleDate');
+    const saveEditScaleBtn = document.getElementById('saveEditScaleBtn');
+    let editScaleCurrentDate = null;
+
+    if(editScaleModeBtn) {
+      editScaleModeBtn.onclick = () => {
+        editScaleMode = !editScaleMode;
+        editScaleModeBtn.classList.toggle('primary', editScaleMode);
+        editScaleModeBtn.textContent = editScaleMode ? '🛠️ Modo edição ATIVO' : '🛠️ Editar Escala';
+      };
+    }
+    if(closeEditScaleBtn && editScaleModal) {
+      closeEditScaleBtn.onclick = () => { editScaleModal.style.display = 'none'; };
+    }
+    // Intercepta clique nas células do calendário
+    document.addEventListener('click', function(e) {
+      if(!editScaleMode) return;
+      const cell = e.target.closest('.cal-cell');
+      if(cell && cell.dataset.date) {
+        e.preventDefault();
+        editScaleCurrentDate = cell.dataset.date;
+        editScaleDate.textContent = 'Data: ' + cell.dataset.date.split('-').reverse().join('/');
+        // Buscar funcionários e status
+        const employees = window.DATA && window.DATA.employees ? window.DATA.employees : [];
+        const schedules = window.DATA && window.DATA.schedules ? window.DATA.schedules : {};
+        const dayInfo = schedules[editScaleCurrentDate] || { assignments: {} };
+        editScaleForm.innerHTML = employees.map(emp => {
+          const checked = dayInfo.assignments && dayInfo.assignments[emp] !== 'folga';
+          return `<label style="display:flex;align-items:center;gap:.7rem;margin-bottom:.5rem"><span style="flex:1">${emp}</span><input type="checkbox" name="${emp}" ${checked ? 'checked' : ''} style="width:32px;height:32px;accent-color:#4f6cff"></label>`;
+        }).join('');
+        editScaleModal.style.display = 'flex';
+      }
+    });
+    // Salvar escala editada
+    if(editScaleForm && saveEditScaleBtn) {
+      saveEditScaleBtn.onclick = function(ev) {
+        ev.preventDefault();
+        if(!editScaleCurrentDate) return;
+        const formData = new FormData(editScaleForm);
+        const employees = window.DATA && window.DATA.employees ? window.DATA.employees : [];
+        if(!window.DATA.schedules) window.DATA.schedules = {};
+        if(!window.DATA.schedules[editScaleCurrentDate]) window.DATA.schedules[editScaleCurrentDate] = { assignments: {} };
+        employees.forEach(emp => {
+          window.DATA.schedules[editScaleCurrentDate].assignments[emp] = formData.has(emp) ? 'trabalho' : 'folga';
+        });
+        editScaleModal.style.display = 'none';
+        if(window.renderCalendar) window.renderCalendar();
+        if(window.renderTeamView) window.renderTeamView();
+      };
+    }
+    // Fecha modal ao clicar fora
+    if(editScaleModal) {
+      editScaleModal.onclick = e => { if(e.target === editScaleModal) editScaleModal.style.display = 'none'; };
+    }
+  </script>
 
       <span class="kbd" id="sessionBadge">—</span>
+      <!-- Botão Legenda -->
+      <button class="btn" id="openLegendBtn" style="margin:1rem 0 .5rem 0;max-width:160px">Legenda</button>
+
       <button class="btn" id="logoutBtn">Sair</button>
     </div>
   </header>
 
   <main>
+
+    <!-- Modal Legenda -->
+    <div id="legendModal"
+      style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);align-items:center;justify-content:center;z-index:300;">
+      <div class="panel"
+        style="width:min(340px,92vw);max-width:96vw;max-height:90vh;overflow:auto;box-shadow:0 8px 32px #0002">
+        <div class="split" style="justify-content:space-between">
+          <h3 style="margin:0;font-size:1.1rem">Legenda</h3>
+          <button class="btn" id="closeLegendBtn">✖</button>
+        </div>
+        <div class="split" style="flex-wrap:wrap;gap:.5rem 1.2rem;margin-top:.7rem">
+          <span class="badge work">T</span> <span class="muted">Trabalho</span>
+          <span class="badge off">F</span> <span class="muted">Folga</span>
+          <span class="badge holiday">FN</span> <span class="muted">Feriado Nacional</span>
+          <span class="badge holiday">FM</span> <span class="muted">Feriado Municipal</span>
+          <span class="badge work">TF</span> <span class="muted">Trabalho/Folga</span>
+        </div>
+      </div>
+    </div>
     <section class="calendar" aria-label="Calendário">
       <div class="cal-header split">
         <div class="split">
@@ -189,6 +297,58 @@
   </div>
 
   <script type="module" defer src="./js/main.js"></script>
+  <script>
+    // Modal de legenda
+    const openLegendBtn = document.getElementById('openLegendBtn');
+    const legendModal = document.getElementById('legendModal');
+    const closeLegendBtn = document.getElementById('closeLegendBtn');
+    if (openLegendBtn && legendModal && closeLegendBtn) {
+      openLegendBtn.onclick = () => legendModal.style.display = 'flex';
+      closeLegendBtn.onclick = () => legendModal.style.display = 'none';
+      legendModal.onclick = e => { if (e.target === legendModal) legendModal.style.display = 'none'; };
+    }
+  </script>
+  <script>
+    // Minimizar/expandir header para mobile (corrigido)
+    document.addEventListener('DOMContentLoaded', function () {
+      const header = document.getElementById('mainHeader');
+      const controls = document.getElementById('headerControls');
+      const toggleBtn = document.getElementById('toggleHeaderBtn');
+      const iconPath = document.getElementById('headerToggleIconPath');
+      let minimized = false;
+      function updateHeader() {
+        if (minimized) {
+          header.classList.add('minimized');
+          toggleBtn.setAttribute('aria-label', 'Expandir header');
+          // seta para baixo
+          iconPath.setAttribute('d', 'M6 9l5 5 5-5');
+        } else {
+          header.classList.remove('minimized');
+          toggleBtn.setAttribute('aria-label', 'Minimizar header');
+          // seta para cima
+          iconPath.setAttribute('d', 'M6 13l5-5 5 5');
+        }
+      }
+      toggleBtn.addEventListener('click', () => {
+        minimized = !minimized;
+        updateHeader();
+      });
+      // Mobile: inicia minimizado se tela pequena
+      if (window.innerWidth < 600) {
+        minimized = true;
+        updateHeader();
+      }
+      window.addEventListener('resize', () => {
+        if (window.innerWidth < 600 && !minimized) {
+          minimized = true;
+          updateHeader();
+        } else if (window.innerWidth >= 600 && minimized) {
+          minimized = false;
+          updateHeader();
+        }
+      });
+    });
+  </script>
 </body>
 
 </html>
