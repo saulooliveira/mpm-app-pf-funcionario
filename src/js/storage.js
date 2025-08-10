@@ -8,27 +8,29 @@ export const defaultData = {
   prefs: { uf:'SP', ibgeCity:'3550308', calendarificKey:'', invertextoToken:'', syncedUF:{}, syncedCity:{} },
 };
 
-export function loadData(){
-  const raw = localStorage.getItem('escala_data_roles_users_openreq_v1');
-  if(!raw){
-    localStorage.setItem('escala_data_roles_users_openreq_v1', JSON.stringify(defaultData));
-    return structuredClone(defaultData);
-  }
+export async function loadData(){
   try{
-    const d = JSON.parse(raw);
-    d.prefs ||= structuredClone(defaultData.prefs);
-    d.prefs.syncedUF ||= {};
-    d.prefs.syncedCity ||= {};
-    d.employees ||= ["Ana","Bruno","Carla","Diego"];
-    d.swapRequests ||= [];
-    return d;
-  }catch{
-    localStorage.setItem('escala_data_roles_users_openreq_v1', JSON.stringify(defaultData));
-    return structuredClone(defaultData);
-  }
+    const resp = await fetch('/api/data');
+    if(resp.ok){
+      const d = await resp.json();
+      d.prefs ||= structuredClone(defaultData.prefs);
+      d.prefs.syncedUF ||= {};
+      d.prefs.syncedCity ||= {};
+      d.employees ||= ["Ana","Bruno","Carla","Diego"];
+      d.swapRequests ||= [];
+      return d;
+    }
+  }catch{}
+  return structuredClone(defaultData);
 }
-export function saveData(){ localStorage.setItem('escala_data_roles_users_openreq_v1', JSON.stringify(DATA)); }
-export let DATA = loadData();
+export async function saveData(){
+  await fetch('/api/data', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(DATA)
+  });
+}
+export let DATA = await loadData();
 
 export function ensureDay(dateStr){
   if(!DATA.schedules[dateStr]){
