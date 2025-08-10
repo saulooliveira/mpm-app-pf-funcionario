@@ -1,5 +1,15 @@
-export function loadSession(){ try{ return JSON.parse(localStorage.getItem('session_v1')) || null; }catch{ return null; } }
-export function saveSession(){ localStorage.setItem('session_v1', JSON.stringify(SESSION)); }
-export function clearSession(){ localStorage.removeItem('session_v1'); SESSION=null; }
+export function loadSession() {
+	try {
+		return JSON.parse(localStorage.getItem('session_v1')) || {};
+	} catch {
+		return {};
+	}}
+export function saveSession() {
+	localStorage.setItem('session_v1', JSON.stringify(SESSION));
+}
+export function clearSession() {
+	localStorage.removeItem('session_v1');
+	SESSION = {};
+}
 export let SESSION = loadSession();
-export const isAdmin = ()=> SESSION?.role==='admin';
+export const isAdmin = () => SESSION ?. role === 'admin';
