@@ -1,0 +1,13 @@
+{
+  "name": "escalas-feriados",
+  "version": "1.0.0",
+  "description": "Escalas & Feriados web app",
+  "type": "module",
+  "scripts": {
+    "start": "lite-server --baseDir src",
+    "test": "echo \"No tests\""
+  },
+  "devDependencies": {
+    "lite-server": "^2.6.1"
+  }
+}
