@@ -1,14 +1,16 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta name="description" content="Aplicativo de escalas e feriados para funcionários" />
-<meta name="theme-color" content="#6c7cff" />
-<title>Escalas & Feriados • Folgas</title>
-<link rel="manifest" href="./manifest.webmanifest" />
-<link rel="stylesheet" href="./css/styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Aplicativo de escalas e feriados para funcionários" />
+  <meta name="theme-color" content="#6c7cff" />
+  <title>Escalas & Feriados • Folgas</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="stylesheet" href="./css/styles.css">
 </head>
+
 <body>
   <header>
     <div class="brand">
@@ -103,7 +105,8 @@
   </main>
 
   <!-- Modal -->
-  <div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center;z-index:50;">
+  <div id="modal"
+    style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center;z-index:50;">
     <div class="panel" style="width:min(680px,92vw);max-height:86vh;overflow:auto">
       <div class="split">
         <h3 id="modalTitle">Modal</h3>
@@ -133,7 +136,7 @@
         </div>
         <div>
           <div class="label">Município (IBGE)</div>
-          <input id="ibgeCity" type="text" value="3550308" placeholder="ex.: 3550308 (São Paulo)"/>
+          <input id="ibgeCity" type="text" value="3550308" placeholder="ex.: 3550308 (São Paulo)" />
         </div>
         <div>
           <div class="label">Ano alvo</div>
@@ -144,11 +147,11 @@
       <div class="grid2" style="margin-top:.8rem">
         <div>
           <div class="label">Calendarific API Key (estado/UF)</div>
-          <input id="calendarificKey" type="text" placeholder="opcional — region=UF"/>
+          <input id="calendarificKey" type="text" placeholder="opcional — region=UF" />
         </div>
         <div>
           <div class="label">Invertexto Token (municipal)</div>
-          <input id="invertextoToken" type="text" placeholder="opcional — city=IBGE"/>
+          <input id="invertextoToken" type="text" placeholder="opcional — city=IBGE" />
         </div>
       </div>
 
@@ -187,4 +190,5 @@
 
   <script type="module" defer src="./js/main.js"></script>
 </body>
+
 </html>

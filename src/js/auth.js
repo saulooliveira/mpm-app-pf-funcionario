@@ -15,6 +15,7 @@ export function refreshEmployeeSelect() {
 	if (!DATA.employees.includes(state.currentEmployee)) 
 		state.currentEmployee = DATA.employees[0] || '';
 	
+
 	employeeSelect.value = state.currentEmployee;
 }
 export function fillLoginEmployees() {
@@ -68,6 +69,7 @@ export function initAuth() {
 		if (role === 'func' && !DATA.employees.includes(name)) 
 			return alert('Funcionário inválido.');
 		
+
 		SESSION.role = role;
 		SESSION.name = name;
 		saveSession();
