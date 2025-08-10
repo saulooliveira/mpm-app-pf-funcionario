@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Escalas & Feriados • Folgas</title>
+<link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">EF</div>
+      <div>
+        <div style="font-weight:700">Escalas & Feriados</div>
+        <div style="font-size:.85rem;color:#9aa3b2">Folgas • Trocas • Calendário</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="prevBtn">◀</button>
+      <div id="currentLabel" class="kbd"></div>
+      <button class="btn" id="nextBtn">▶</button>
+
+      <div class="btn-group" role="tablist" aria-label="Mudar visualização">
+        <button class="btn-tab active" data-view="month">Mensal</button>
+        <button class="btn-tab" data-view="week">Semanal</button>
+        <button class="btn-tab" data-view="day">Diária</button>
+      </div>
+
+      <select id="employeeSelect" title="Selecionar funcionário"></select>
+      <button class="btn ghost" id="todayBtn">Hoje</button>
+
+      <button class="btn adminOnly" id="syncAllBtn">📡 Sincronizar feriados</button>
+      <button class="btn adminOnly" id="openSettings">⚙️ Configurar APIs</button>
+      <button class="btn adminOnly" id="manageUsersBtn">👤 Usuários</button>
+
+      <span class="kbd" id="sessionBadge">—</span>
+      <button class="btn" id="logoutBtn">Sair</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="calendar" aria-label="Calendário">
+      <div class="cal-header split">
+        <div class="split">
+          <span class="label">Data selecionada:</span>
+          <span id="selectedDateLabel" class="pill">—</span>
+        </div>
+        <div class="split">
+          <button class="btn adminOnly" id="toggleHolidayBtn">⛱️ Marcar/Desmarcar Feriado</button>
+          <button class="btn adminOnly" id="editScaleBtn">👥 Editar escala</button>
+          <button class="btn primary" id="swapBtn">🔄 Solicitar troca</button>
+        </div>
+      </div>
+      <div id="calendarBody"></div>
+    </section>
+
+    <div class="side">
+      <section class="panel">
+        <h3>Visão Equipe</h3>
+        <div class="split" style="margin-bottom:.6rem">
+          <div class="split">
+            <div class="label">Data base</div>
+            <input type="date" id="teamDate">
+          </div>
+          <div class="btn-group" style="margin-left:.4rem">
+            <button class="btn-tab active" data-team="day">Dia</button>
+            <button class="btn-tab" data-team="week">Semana</button>
+          </div>
+          <div class="right muted" id="teamMeta"></div>
+        </div>
+        <div style="overflow:auto;max-height:420px;border:1px solid #242a48;border-radius:12px">
+          <table id="teamTable">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel" id="myRequestsPanel">
+        <h3>Minhas solicitações de troca</h3>
+        <div id="requestsList" class="list"></div>
+      </section>
+
+      <section class="panel adminOnly">
+        <h3>Painel do Admin — Aprovar trocas</h3>
+        <div id="adminRequestsList" class="list"></div>
+      </section>
+
+      <section class="panel">
+        <h3>Feriados</h3>
+        <div class="grid3 adminOnly">
+          <input type="date" id="holidayDate">
+          <button class="btn" id="addHolidayBtn">➕ Adicionar</button>
+          <button class="btn" id="resyncYearBtn">🔁 Re-sync ano visível</button>
+        </div>
+        <div id="holidayList" class="list" style="margin-top:.8rem"></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Modal -->
+  <div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center;z-index:50;">
+    <div class="panel" style="width:min(680px,92vw);max-height:86vh;overflow:auto">
+      <div class="split">
+        <h3 id="modalTitle">Modal</h3>
+        <button class="btn" id="closeModal">✖</button>
+      </div>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <!-- Settings bottom sheet -->
+  <div class="settings" id="settingsSheet">
+    <div class="sheet">
+      <div class="split" style="justify-content:space-between">
+        <h3>Configurações de Feriados (UF/Município & APIs)</h3>
+        <button class="btn" id="closeSettings">Fechar</button>
+      </div>
+      <div class="grid3">
+        <div>
+          <div class="label">UF (estado)</div>
+          <select id="ufSelect">
+            <option value="SP" selected>SP — São Paulo</option>
+            <option value="RJ">RJ — Rio de Janeiro</option>
+            <option value="MG">MG — Minas Gerais</option>
+            <option value="RS">RS — Rio Grande do Sul</option>
+            <option value="PR">PR — Paraná</option>
+          </select>
+        </div>
+        <div>
+          <div class="label">Município (IBGE)</div>
+          <input id="ibgeCity" type="text" value="3550308" placeholder="ex.: 3550308 (São Paulo)"/>
+        </div>
+        <div>
+          <div class="label">Ano alvo</div>
+          <input id="settingsYear" type="number" min="2000" max="2100" />
+        </div>
+      </div>
+
+      <div class="grid2" style="margin-top:.8rem">
+        <div>
+          <div class="label">Calendarific API Key (estado/UF)</div>
+          <input id="calendarificKey" type="text" placeholder="opcional — region=UF"/>
+        </div>
+        <div>
+          <div class="label">Invertexto Token (municipal)</div>
+          <input id="invertextoToken" type="text" placeholder="opcional — city=IBGE"/>
+        </div>
+      </div>
+
+      <div class="split" style="justify-content:flex-end;margin-top:1rem">
+        <button class="btn" id="saveSettings">Salvar</button>
+        <button class="btn primary" id="testSync">Testar sync agora</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Login -->
+  <div id="loginOverlay">
+    <div class="loginCard">
+      <h3 style="margin-top:0">Entrar</h3>
+      <div class="grid2">
+        <div>
+          <div class="label">Perfil</div>
+          <select id="loginRole">
+            <option value="admin">Admin</option>
+            <option value="func" selected>Funcionário</option>
+          </select>
+        </div>
+        <div id="loginEmployeeWrap">
+          <div class="label">Funcionário</div>
+          <select id="loginEmployee"></select>
+        </div>
+      </div>
+      <div class="split" style="justify-content:flex-end;margin-top:1rem">
+        <button class="btn primary" id="loginBtn">Entrar</button>
+      </div>
+      <div class="muted" style="font-size:.9rem;margin-top:.4rem">
+        Funcionário vê a escala e solicita trocas. Admin gerencia tudo.
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
