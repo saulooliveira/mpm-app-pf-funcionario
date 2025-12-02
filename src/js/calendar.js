@@ -206,6 +206,10 @@ export function renderCalendar() {
 		renderDay();
 	 bindCellClicks();
 }
+// Expor no window para integração com HTML inline
+window.DATA = DATA;
+window.renderCalendar = renderCalendar;
+window.renderTeamView = renderTeamView;
 
 import {renderTeamView} from './teamView.js';
 
