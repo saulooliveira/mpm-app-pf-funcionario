@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  create-tag:
+    name: Criar tag v0.0.*
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Criar próxima tag v0.0.*
+        id: next_tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+
+          EXISTING_TAG="$(git tag --points-at HEAD 'v0.0.*' | head -n 1 || true)"
+          if [[ -n "${EXISTING_TAG}" ]]; then
+            echo "A HEAD já possui a tag ${EXISTING_TAG}. Nenhuma nova tag será criada."
+            echo "created=false" >> "$GITHUB_OUTPUT"
+            echo "tag=${EXISTING_TAG}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          LATEST_TAG="$(git tag -l 'v0.0.*' --sort=-v:refname | head -n 1 || true)"
+          if [[ -z "${LATEST_TAG}" ]]; then
+            NEXT_TAG="v0.0.1"
+          else
+            PATCH="${LATEST_TAG#v0.0.}"
+            NEXT_PATCH=$((PATCH + 1))
+            NEXT_TAG="v0.0.${NEXT_PATCH}"
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git tag "${NEXT_TAG}"
+          git push origin "${NEXT_TAG}"
+
+          echo "created=true" >> "$GITHUB_OUTPUT"
+          echo "tag=${NEXT_TAG}" >> "$GITHUB_OUTPUT"
+
+  publish-and-release:
+    name: Publicar e criar Release
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Localizar projeto .csproj
+        id: locate_project
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROJECT_FILE="$(find . -maxdepth 8 -name '*.csproj' | head -n 1 || true)"
+          if [[ -z "${PROJECT_FILE}" ]]; then
+            echo "Nenhum arquivo .csproj foi encontrado no repositório."
+            exit 1
+          fi
+          echo "project_file=${PROJECT_FILE}" >> "$GITHUB_OUTPUT"
+
+      - name: Restore
+        run: dotnet restore "${{ steps.locate_project.outputs.project_file }}"
+
+      - name: Publish (Release | win-x64 | self-contained)
+        run: |
+          dotnet publish "${{ steps.locate_project.outputs.project_file }}" \
+            --configuration Release \
+            --runtime win-x64 \
+            --self-contained true \
+            --output ./artifacts/publish
+
+      - name: Gerar zip do executável
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ./artifacts/release
+          zip -r "./artifacts/release/BuscaPreco-${{ github.ref_name }}-win-x64.zip" ./artifacts/publish
+
+      - name: Criar GitHub Release e anexar binário
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            ./artifacts/release/BuscaPreco-${{ github.ref_name }}-win-x64.zip
